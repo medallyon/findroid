@@ -1,13 +1,11 @@
 package dev.jdtech.jellyfin.adapters
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import dev.jdtech.jellyfin.R
 import dev.jdtech.jellyfin.databinding.DownloadQueueItemBinding
 import dev.jdtech.jellyfin.models.DownloadItem
 import dev.jdtech.jellyfin.models.DownloadState

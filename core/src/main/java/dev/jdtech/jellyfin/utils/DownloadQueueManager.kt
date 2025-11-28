@@ -10,6 +10,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.jdtech.jellyfin.AppPreferences
+import dev.jdtech.jellyfin.core.R
 import dev.jdtech.jellyfin.database.ServerDatabaseDao
 import dev.jdtech.jellyfin.models.DownloadItem
 import dev.jdtech.jellyfin.models.DownloadItemType
@@ -51,13 +52,13 @@ class DownloadQueueManager @Inject constructor(
         // Check if already in queue
         val existingItem = database.getDownloadItemByItemId(item.id)
         if (existingItem != null && existingItem.state != DownloadState.FAILED && existingItem.state != DownloadState.CANCELLED) {
-            return Pair(existingItem.id, UiText.DynamicString("Item is already in download queue"))
+            return Pair(existingItem.id, UiText.StringResource(R.string.download_already_in_queue))
         }
 
         val itemType = when (item) {
             is FindroidMovie -> DownloadItemType.MOVIE
             is FindroidEpisode -> DownloadItemType.EPISODE
-            else -> return Pair(UUID.randomUUID(), UiText.DynamicString("Unsupported item type"))
+            else -> return Pair(UUID.randomUUID(), UiText.StringResource(R.string.download_unsupported_item_type))
         }
 
         val downloadItem = DownloadItem(

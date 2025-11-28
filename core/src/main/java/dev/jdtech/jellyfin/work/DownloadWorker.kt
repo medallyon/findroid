@@ -227,6 +227,7 @@ class DownloadWorker @AssistedInject constructor(
 
             val totalBytes = connection.contentLengthLong
             var bytesDownloaded = 0L
+            var lastProgressUpdate = 0
 
             // Update total bytes in database
             database.updateDownloadProgress(downloadItemId, DownloadState.DOWNLOADING, 0, 0)
@@ -247,25 +248,31 @@ class DownloadWorker @AssistedInject constructor(
                         output.write(buffer, 0, bytesRead)
                         bytesDownloaded += bytesRead
 
-                        // Calculate and update progress
+                        // Calculate progress percentage
                         val progress = if (totalBytes > 0) {
                             ((bytesDownloaded * 100) / totalBytes).toInt()
                         } else {
                             -1
                         }
 
-                        // Update progress in database
-                        database.updateDownloadProgress(
-                            downloadItemId,
-                            DownloadState.DOWNLOADING,
-                            progress,
-                            bytesDownloaded
-                        )
+                        // Update progress in database only when progress changes by at least 1%
+                        // to reduce database write frequency
+                        if (progress != lastProgressUpdate) {
+                            database.updateDownloadProgress(
+                                downloadItemId,
+                                DownloadState.DOWNLOADING,
+                                progress,
+                                bytesDownloaded
+                            )
+                            lastProgressUpdate = progress
+                        }
 
-                        // Apply bandwidth throttling if configured
+                        // Apply bandwidth throttling if configured (token bucket algorithm)
+                        // Compares actual elapsed time vs expected time based on target bandwidth
+                        // and sleeps if we're downloading faster than the limit
                         if (bandwidthLimit > 0) {
                             val elapsedTime = System.currentTimeMillis() - startTime
-                            val expectedTime = (bytesDownloaded * 1000) / (bandwidthLimit * 1024) // Convert KB/s to ms
+                            val expectedTime = (bytesDownloaded * 1000) / (bandwidthLimit * 1024) // KB/s to ms
                             if (elapsedTime < expectedTime) {
                                 Thread.sleep(expectedTime - elapsedTime)
                             }

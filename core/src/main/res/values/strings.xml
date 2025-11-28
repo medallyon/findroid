@@ -237,4 +237,6 @@
     <string name="cancel_all_downloads">Cancel All</string>
     <string name="retry_download">Retry</string>
     <string name="download_season_queued">Season queued for download</string>
+    <string name="download_already_in_queue">Item is already in download queue</string>
+    <string name="download_unsupported_item_type">Unsupported item type</string>
 </resources>
