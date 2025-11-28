@@ -20,4 +20,18 @@
         android:defaultValue="false"
         app:key="pref_downloads_quality_default"
         app:summary="@string/quality_default" />
+    <ListPreference
+        android:key="pref_downloads_concurrent"
+        android:title="@string/download_concurrent_title"
+        android:summary="@string/download_concurrent_summary"
+        android:defaultValue="2"
+        android:entries="@array/download_concurrent_entries"
+        android:entryValues="@array/download_concurrent_values" />
+    <ListPreference
+        android:key="pref_downloads_bandwidth_limit"
+        android:title="@string/download_bandwidth_title"
+        android:summary="@string/download_bandwidth_summary"
+        android:defaultValue="0"
+        android:entries="@array/download_bandwidth_entries"
+        android:entryValues="@array/download_bandwidth_values" />
 </PreferenceScreen>

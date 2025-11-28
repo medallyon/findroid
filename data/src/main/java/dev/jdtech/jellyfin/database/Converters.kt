@@ -1,6 +1,8 @@
 package dev.jdtech.jellyfin.database
 
 import androidx.room.TypeConverter
+import dev.jdtech.jellyfin.models.DownloadItemType
+import dev.jdtech.jellyfin.models.DownloadState
 import dev.jdtech.jellyfin.models.FindroidChapter
 import dev.jdtech.jellyfin.models.FindroidSegmentType
 import kotlinx.serialization.encodeToString
@@ -48,5 +50,25 @@ class Converters {
     @TypeConverter
     fun fromStringToFindroidSegmentType(value: String): FindroidSegmentType {
         return FindroidSegmentType.valueOf(value)
+    }
+
+    @TypeConverter
+    fun fromDownloadStateToString(value: DownloadState): String {
+        return value.name
+    }
+
+    @TypeConverter
+    fun fromStringToDownloadState(value: String): DownloadState {
+        return DownloadState.valueOf(value)
+    }
+
+    @TypeConverter
+    fun fromDownloadItemTypeToString(value: DownloadItemType): String {
+        return value.name
+    }
+
+    @TypeConverter
+    fun fromStringToDownloadItemType(value: String): DownloadItemType {
+        return DownloadItemType.valueOf(value)
     }
 }

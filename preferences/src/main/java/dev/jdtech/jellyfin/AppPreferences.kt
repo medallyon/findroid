@@ -158,6 +158,15 @@ constructor(
         false,
         )
 
+    val downloadConcurrentLimit get() = sharedPreferences.getString(
+        Constants.PREF_DOWNLOADS_CONCURRENT,
+        Constants.DEFAULT_CONCURRENT_DOWNLOADS.toString(),
+    )!!.toIntOrNull() ?: Constants.DEFAULT_CONCURRENT_DOWNLOADS
+
+    val downloadBandwidthLimit get() = sharedPreferences.getString(
+        Constants.PREF_DOWNLOADS_BANDWIDTH_LIMIT,
+        Constants.DEFAULT_BANDWIDTH_LIMIT.toString(),
+    )!!.toLongOrNull() ?: Constants.DEFAULT_BANDWIDTH_LIMIT.toLong()
 
     // Sorting
     var sortBy: String

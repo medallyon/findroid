@@ -49,6 +49,8 @@ object Constants {
     const val PREF_DOWNLOADS_ROAMING = "pref_downloads_roaming"
     const val PREF_DOWNLOADS_QUALITY = "pref_downloads_quality"
     const val PREF_DOWNLOADS_QUALITY_DEFAULT = "pref_downloads_quality_default"
+    const val PREF_DOWNLOADS_CONCURRENT = "pref_downloads_concurrent"
+    const val PREF_DOWNLOADS_BANDWIDTH_LIMIT = "pref_downloads_bandwidth_limit"
     const val PREF_SORT_BY = "pref_sort_by"
     const val PREF_SORT_ORDER = "pref_sort_order"
     const val PREF_DISPLAY_EXTRA_INFO = "pref_display_extra_info"
@@ -66,6 +68,10 @@ object Constants {
     const val NETWORK_DEFAULT_CONNECT_TIMEOUT = 6_000L
     const val NETWORK_DEFAULT_SOCKET_TIMEOUT = 10_000L
     const val NETWORK_DEFAULT_CODEC = "h264"
+
+    // downloads
+    const val DEFAULT_CONCURRENT_DOWNLOADS = 2
+    const val DEFAULT_BANDWIDTH_LIMIT = 0 // 0 means unlimited
 
     // sorting
     // This values must correspond to a SortString from [SortBy]
