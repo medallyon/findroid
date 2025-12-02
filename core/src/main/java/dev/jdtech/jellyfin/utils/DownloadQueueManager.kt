@@ -20,8 +20,12 @@ import dev.jdtech.jellyfin.models.FindroidItem
 import dev.jdtech.jellyfin.models.FindroidMovie
 import dev.jdtech.jellyfin.models.UiText
 import dev.jdtech.jellyfin.work.DownloadWorker
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -38,6 +42,7 @@ class DownloadQueueManager @Inject constructor(
     private val appPreferences: AppPreferences,
 ) {
     private val workManager = WorkManager.getInstance(context)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     /**
      * Add an item to the download queue.
@@ -152,6 +157,9 @@ class DownloadQueueManager @Inject constructor(
         // Update state to downloading (will be updated again when worker starts)
         database.updateDownloadState(downloadItem.id, DownloadState.PENDING)
         Timber.d("Started download work for: ${downloadItem.itemName}")
+
+        // Observe work completion to trigger the next download in queue
+        observeWorkCompletion(downloadItem.id, downloadWork.id)
     }
 
     /**
@@ -255,5 +263,23 @@ class DownloadQueueManager @Inject constructor(
             .map { workInfos ->
                 workInfos.firstOrNull()?.state
             }
+    }
+
+    /**
+     * Observe work completion and trigger the next download in queue.
+     * This ensures that when a download finishes (success or failure),
+     * the queue is processed to start any pending downloads.
+     */
+    private fun observeWorkCompletion(downloadItemId: UUID, workRequestId: UUID) {
+        scope.launch {
+            workManager.getWorkInfoByIdFlow(workRequestId)
+                .collect { workInfo ->
+                    if (workInfo != null && workInfo.state.isFinished) {
+                        Timber.d("Download work finished for $downloadItemId with state: ${workInfo.state}")
+                        // Process queue to start next pending download
+                        processQueue()
+                    }
+                }
+        }
     }
 }
