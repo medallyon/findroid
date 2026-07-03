@@ -3,7 +3,10 @@ package dev.jdtech.jellyfin.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.jdtech.jellyfin.AppPreferences
+import dev.jdtech.jellyfin.models.DownloadItemType
 import dev.jdtech.jellyfin.models.EpisodeItem
+import dev.jdtech.jellyfin.models.FindroidEpisode
 import dev.jdtech.jellyfin.models.FindroidSeason
 import dev.jdtech.jellyfin.models.FindroidSourceType
 import dev.jdtech.jellyfin.models.UiText
@@ -11,6 +14,7 @@ import dev.jdtech.jellyfin.models.isDownloaded
 import dev.jdtech.jellyfin.models.isDownloading
 import dev.jdtech.jellyfin.repository.JellyfinRepository
 import dev.jdtech.jellyfin.utils.Downloader
+import dev.jdtech.jellyfin.utils.DownloadQueueManager
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,6 +33,8 @@ class SeasonViewModel
 constructor(
     private val jellyfinRepository: JellyfinRepository,
     private val downloader: Downloader,
+    private val downloadQueueManager: DownloadQueueManager,
+    private val appPreferences: AppPreferences,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
     val uiState = _uiState.asStateFlow()
@@ -69,24 +75,56 @@ constructor(
         }
     }
 
+    /**
+     * Download all episodes in the season using the custom download queue manager.
+     * This queues all eligible episodes for download instead of downloading them immediately.
+     */
     fun download(sourceIndex: Int = 0, storageIndex: Int = 0, downloadWatched: Boolean = false) {
         viewModelScope.launch {
+            val serverId = appPreferences.currentServer ?: return@launch
+            var queuedCount = 0
+            var errorOccurred = false
+
             for (episode in jellyfinRepository.getEpisodes(season.seriesId, season.id)) {
                 val item = jellyfinRepository.getEpisode(episode.id)
+
+                // Skip watched episodes if downloadWatched is false
                 if (item.played && !downloadWatched) {
                     continue
                 }
+
+                // Skip already downloaded or downloading episodes
                 if (item.isDownloaded() || item.isDownloading()) {
                     continue
                 }
-                val result = downloader.downloadItem(item, item.sources[sourceIndex].id, storageIndex)
+
+                // Skip episodes without sources
+                if (item.sources.isEmpty()) {
+                    continue
+                }
+
+                // Queue the episode for download
+                val result = downloadQueueManager.queueDownload(
+                    item = item,
+                    sourceId = item.sources[sourceIndex].id,
+                    serverId = serverId,
+                    storageIndex = storageIndex
+                )
+
                 if (result.second != null) {
                     _downloadError.emit(result.second!!)
-                    break
+                    errorOccurred = true
+                } else {
+                    queuedCount++
                 }
             }
-            // Send one time signal to fragment that the download has been initiated
+
+            // Send signal to fragment that downloads have been queued
             _downloadStatus.emit(Pair(10, Random.nextInt()))
+
+            if (queuedCount > 0 && !errorOccurred) {
+                // Optionally emit a success message
+            }
         }
     }
 

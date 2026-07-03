@@ -6,6 +6,8 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
+import dev.jdtech.jellyfin.models.DownloadItem
+import dev.jdtech.jellyfin.models.DownloadState
 import dev.jdtech.jellyfin.models.FindroidEpisodeDto
 import dev.jdtech.jellyfin.models.FindroidMediaStreamDto
 import dev.jdtech.jellyfin.models.FindroidMovieDto
@@ -22,6 +24,7 @@ import dev.jdtech.jellyfin.models.ServerWithAddresses
 import dev.jdtech.jellyfin.models.ServerWithAddressesAndUsers
 import dev.jdtech.jellyfin.models.ServerWithUsers
 import dev.jdtech.jellyfin.models.User
+import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
 @Dao
@@ -264,4 +267,59 @@ interface ServerDatabaseDao {
 
     @Query("SELECT * FROM trickplayInfos WHERE sourceId = :sourceId")
     fun getTrickplayInfo(sourceId: String): FindroidTrickplayInfoDto?
+
+    // Download Queue Methods
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertDownloadItem(downloadItem: DownloadItem)
+
+    @Update
+    fun updateDownloadItem(downloadItem: DownloadItem)
+
+    @Query("SELECT * FROM downloadQueue WHERE id = :id")
+    fun getDownloadItem(id: UUID): DownloadItem?
+
+    @Query("SELECT * FROM downloadQueue WHERE itemId = :itemId")
+    fun getDownloadItemByItemId(itemId: UUID): DownloadItem?
+
+    @Query("SELECT * FROM downloadQueue ORDER BY createdAt ASC")
+    fun getAllDownloadItems(): List<DownloadItem>
+
+    @Query("SELECT * FROM downloadQueue ORDER BY createdAt ASC")
+    fun getAllDownloadItemsFlow(): Flow<List<DownloadItem>>
+
+    @Query("SELECT * FROM downloadQueue WHERE state = :state ORDER BY createdAt ASC")
+    fun getDownloadItemsByState(state: DownloadState): List<DownloadItem>
+
+    @Query("SELECT * FROM downloadQueue WHERE state IN (:states) ORDER BY createdAt ASC")
+    fun getDownloadItemsByStates(states: List<DownloadState>): List<DownloadItem>
+
+    @Query("SELECT * FROM downloadQueue WHERE state = 'PENDING' ORDER BY createdAt ASC LIMIT :limit")
+    fun getPendingDownloads(limit: Int): List<DownloadItem>
+
+    @Query("SELECT COUNT(*) FROM downloadQueue WHERE state = 'DOWNLOADING'")
+    fun getActiveDownloadsCount(): Int
+
+    @Query("UPDATE downloadQueue SET state = :state WHERE id = :id")
+    fun updateDownloadState(id: UUID, state: DownloadState)
+
+    @Query("UPDATE downloadQueue SET state = :state, progress = :progress, bytesDownloaded = :bytesDownloaded WHERE id = :id")
+    fun updateDownloadProgress(id: UUID, state: DownloadState, progress: Int, bytesDownloaded: Long)
+
+    @Query("UPDATE downloadQueue SET state = 'COMPLETED', progress = 100, completedAt = :completedAt WHERE id = :id")
+    fun markDownloadCompleted(id: UUID, completedAt: Long = System.currentTimeMillis())
+
+    @Query("UPDATE downloadQueue SET state = 'FAILED', errorMessage = :errorMessage, retryCount = retryCount + 1 WHERE id = :id")
+    fun markDownloadFailed(id: UUID, errorMessage: String?)
+
+    @Query("UPDATE downloadQueue SET state = 'CANCELLED' WHERE id = :id")
+    fun cancelDownload(id: UUID)
+
+    @Query("DELETE FROM downloadQueue WHERE id = :id")
+    fun deleteDownloadItem(id: UUID)
+
+    @Query("DELETE FROM downloadQueue WHERE state = 'COMPLETED'")
+    fun clearCompletedDownloads()
+
+    @Query("DELETE FROM downloadQueue")
+    fun clearAllDownloads()
 }

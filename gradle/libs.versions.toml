@@ -71,6 +71,7 @@ androidx-paging-compose = { group = "androidx.paging", name = "paging-compose", 
 androidx-preference = { group = "androidx.preference", name = "preference", version.ref = "androidx-preference" }
 androidx-recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "androidx-recyclerview" }
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "androidx-room" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "androidx-room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "androidx-room" }
 androidx-swiperefreshlayout = { group = "androidx.swiperefreshlayout", name = "swiperefreshlayout", version.ref = "androidx-swiperefreshlayout" }
 androidx-test-core = { group = "androidx.test", name = "core", version.ref = "androidx-test-core" }

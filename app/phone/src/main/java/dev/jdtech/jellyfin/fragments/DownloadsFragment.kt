@@ -14,6 +14,7 @@ import androidx.navigation.fragment.findNavController
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import dev.jdtech.jellyfin.AppPreferences
+import dev.jdtech.jellyfin.adapters.DownloadQueueAdapter
 import dev.jdtech.jellyfin.adapters.FavoritesListAdapter
 import dev.jdtech.jellyfin.databinding.FragmentDownloadsBinding
 import dev.jdtech.jellyfin.models.FindroidItem
@@ -36,12 +37,25 @@ class DownloadsFragment : Fragment() {
     @Inject
     lateinit var appPreferences: AppPreferences
 
+    private lateinit var downloadQueueAdapter: DownloadQueueAdapter
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View {
         binding = FragmentDownloadsBinding.inflate(inflater, container, false)
+
+        // Initialize download queue adapter
+        downloadQueueAdapter = DownloadQueueAdapter(
+            onCancelClick = { downloadItemId ->
+                viewModel.cancelDownload(downloadItemId)
+            },
+            onRetryClick = { downloadItemId ->
+                viewModel.retryDownload(downloadItemId)
+            }
+        )
+        binding.downloadQueueRecyclerView.adapter = downloadQueueAdapter
 
         binding.downloadsRecyclerView.adapter = FavoritesListAdapter { item ->
             navigateToMediaItem(item)
@@ -74,6 +88,13 @@ class DownloadsFragment : Fragment() {
                         }
                     }
                 }
+                launch {
+                    viewModel.downloadQueue.collect { queuedDownloads ->
+                        // Update download queue section visibility
+                        binding.downloadQueueSection.isVisible = queuedDownloads.isNotEmpty()
+                        downloadQueueAdapter.submitList(queuedDownloads)
+                    }
+                }
             }
         }
 
@@ -88,11 +109,19 @@ class DownloadsFragment : Fragment() {
 
     private fun bindUiStateNormal(uiState: DownloadsViewModel.UiState.Normal) {
         binding.loadingIndicator.isVisible = false
-        binding.downloadsRecyclerView.isVisible = true
+        binding.nestedScrollView.isVisible = true
         binding.errorLayout.errorPanel.isVisible = false
-        binding.noDownloadsText.isVisible = uiState.sections.isEmpty()
+
+        // Show download queue section if there are queued downloads
+        binding.downloadQueueSection.isVisible = uiState.queuedDownloads.isNotEmpty()
+        downloadQueueAdapter.submitList(uiState.queuedDownloads)
+
+        // Show downloaded content
         val adapter = binding.downloadsRecyclerView.adapter as FavoritesListAdapter
         adapter.submitList(uiState.sections)
+
+        // Show "no downloads" message only if both queue and downloads are empty
+        binding.noDownloadsText.isVisible = uiState.sections.isEmpty() && uiState.queuedDownloads.isEmpty()
     }
 
     private fun bindUiStateLoading() {
